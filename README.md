@@ -26,6 +26,78 @@ Developed with **Node.js**, **Express**, and **PostgreSQL**.
 - **Privacy Enforcement**: Donor phone numbers and sensitive medical history are stripped from responses returned to Hospital/Patient requesters.
 - **Deterministic Domain Engine**: Compatibility and donor ranking use deterministic clinical rules (separate RBC and Plasma matrices; no unverified AI/ML).
 
+```mermaid
+flowchart TD
+    subgraph Clients["1. Client Layer (Users & Roles)"]
+        D["Donor (Web / Mobile)"]
+        H["Hospital / Clinician"]
+        P["Patient / Requester"]
+        B["Blood Bank Staff"]
+        A["System Administrator"]
+    end
+
+    subgraph APILayer["2. API & Security Layer (Express Gateway)"]
+        GW["Express Router & HTTP Server"]
+        AUTH_MW["JWT Authentication Middleware"]
+        RBAC_MW["ISA Role Authorization Guard"]
+        PRIVACY_MW["Donor Privacy Filter (Hides Phone/Medical Notes)"]
+        VAL_MW["Input Validation & Joi Schemas"]
+        ERR_MW["Centralized Error Handler (AppError & DB Codes)"]
+    end
+
+    subgraph Modules["3. Modular Monolithic Business Services"]
+        AUTH_MOD["auth_module<br/>(FR-01: Login, Registration & ISA Subtypes)"]
+        DONOR_MOD["donor_module<br/>(FR-02: Profile, Availability & History)"]
+        ELIG_MOD["eligibility_module<br/>(FR-03: Age, Weight, Interval & Deferrals)"]
+        INV_MOD["inventory_module<br/>(FR-04, FR-05: Weak-Entity Tracking, Expiry & Transfers)"]
+        COMPAT_MOD["compatibility_module<br/>(FR-07: Deterministic RBC & Plasma Matrices)"]
+        REQ_MOD["emergency_request_module<br/>(FR-06, FR-08, FR-09: Requests, Multi-Factor Ranking & Escalation)"]
+        RES_MOD["reservation_module<br/>(FR-10: Part-B Atomic Transaction & Row-Locking Fulfillment)"]
+        DRIVE_MOD["donation_drive_module<br/>(FR-11: Drives, Slot Booking & Overbooking Lock)"]
+        REP_MOD["reporting_audit_module<br/>(FR-12: Dashboard KPIs, CSV Export & Audit Trail)"]
+    end
+
+    subgraph DataAccess["4. Data Access & Transaction Coordinator"]
+        POOL["PostgreSQL Connection Pool (pg.Pool / pg-mem fallback)"]
+        TX["Transaction Coordinator (BEGIN / FOR UPDATE / COMMIT / ROLLBACK)"]
+    end
+
+    subgraph Database["5. PostgreSQL Relational Store (ACID)"]
+        USERS_TB["users (Supertype)"]
+        ISA_TB["ISA Subtypes: hospital | patient | blood_bank | donor"]
+        UNIT_TB["blood_unit (Weak Entity composite PK)"]
+        REQ_TB["blood_request & reservations"]
+        REL_TB["admits | donates | donation_drives | slot_bookings"]
+        AUDIT_TB["audit_logs (Immutable) & system_rules"]
+    end
+
+    subgraph Storage["6. File / Object Storage"]
+        CSV_STORE["CSV Reports & Artifacts (/storage)"]
+    end
+
+    %% Client to API
+    D & H & P & B & A --> GW
+    GW --> AUTH_MW --> RBAC_MW --> PRIVACY_MW --> VAL_MW
+
+    %% API to Modules
+    VAL_MW --> AUTH_MOD & DONOR_MOD & ELIG_MOD & INV_MOD & COMPAT_MOD & REQ_MOD & RES_MOD & DRIVE_MOD & REP_MOD
+
+    %% Inter-module workflows
+    REQ_MOD -->|Validate Match| COMPAT_MOD
+    REQ_MOD -->|Check Eligibility| ELIG_MOD
+    RES_MOD -->|Compatibility Check| COMPAT_MOD
+    DRIVE_MOD -->|Eligibility Check| ELIG_MOD
+    REP_MOD -->|Export CSV| CSV_STORE
+
+    %% Modules to Data Access
+    AUTH_MOD & DONOR_MOD & ELIG_MOD & INV_MOD & REQ_MOD & DRIVE_MOD --> POOL
+    RES_MOD & INV_MOD --> TX --> POOL
+
+    %% Pool to DB Tables
+    POOL --> USERS_TB & ISA_TB & UNIT_TB & REQ_TB & REL_TB & AUDIT_TB
+    ERR_MW -.->|Catches Exceptions| GW
+```
+
 ---
 
 ## 📋 Functional Requirements Implementation (FR-01 to FR-12)
