@@ -4,6 +4,18 @@ const { AppError } = require('../../middleware/errorHandler');
 
 class ReportService {
   /**
+   * 10. generate_reports()
+   * Gap Analysis:
+   * Boundary gaps: Empty date range or no records
+   * Error path gaps: Invalid filters or export failure
+   * Domain constraint gaps: Authorized access to sensitive data
+   * Specification addition: Filter limits, CSV format generation, and access permissions
+   */
+  async generate_reports(report_type = 'DASHBOARD', start_date = null, end_date = null, user_role = 'ADMIN', format = 'JSON') {
+    return this.generateSystemReport(report_type, start_date, end_date, user_role, format);
+  }
+
+  /**
    * FR-12: generate_system_report(report_type: str, start_date: date, end_date: date, user_role: str) -> Report
    */
   async generateSystemReport(reportType, startDate = null, endDate = null, userRole = null, exportFormat = 'JSON') {
@@ -71,4 +83,7 @@ class ReportService {
   }
 }
 
-module.exports = new ReportService();
+const reportService = new ReportService();
+reportService.generate_reports = reportService.generate_reports.bind(reportService);
+module.exports = reportService;
+module.exports.generate_reports = reportService.generate_reports;

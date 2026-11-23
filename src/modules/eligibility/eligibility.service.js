@@ -29,6 +29,21 @@ class EligibilityService {
   }
 
   /**
+   * 2. calculate_eligibility()
+   * Gap Analysis:
+   * Boundary gaps: Age or weight at configured limits
+   * Error path gaps: Missing medical details or invalid donation history
+   * Domain constraint gaps: Donation interval and temporary deferral rules
+   * Specification addition: Evaluates eligibility thresholds and boundary conditions
+   */
+  async calculate_eligibility(donor_id, component = 'WHOLE_BLOOD') {
+    if (!donor_id || !String(donor_id).trim()) {
+      throw new AppError('Valid donor_id is required', 400, 'INVALID_DONOR_ID');
+    }
+    return this.calculateEligibility(String(donor_id).trim(), component);
+  }
+
+  /**
    * FR-03: calculate_eligibility(donor_id: str, ...) -> EligibilityStatus
    * Evaluates donor eligibility against deterministic thresholds
    */
@@ -140,4 +155,7 @@ class EligibilityService {
   }
 }
 
-module.exports = new EligibilityService();
+const eligibilityService = new EligibilityService();
+eligibilityService.calculate_eligibility = eligibilityService.calculate_eligibility.bind(eligibilityService);
+module.exports = eligibilityService;
+module.exports.calculate_eligibility = eligibilityService.calculate_eligibility;

@@ -22,6 +22,43 @@ describe('Gap Analysis Record: Verification of the 10 Core Functions', () => {
     await db.closePool();
   });
 
+  describe('Business Logic Module Exports & Verification', () => {
+    const donorService = require('../src/modules/donor/donor.service');
+    const eligibilityService = require('../src/modules/eligibility/eligibility.service');
+    const inventoryService = require('../src/modules/inventory/inventory.service');
+    const requestService = require('../src/modules/emergency_request/request.service');
+    const reservationService = require('../src/modules/reservation/reservation.service');
+    const driveService = require('../src/modules/donation_drive/drive.service');
+    const reportService = require('../src/modules/reporting_audit/report.service');
+    const rootHub = require('../src/index');
+
+    test('All 10 functions exist directly in their respective business logic services', () => {
+      expect(typeof donorService.register_donor).toBe('function');
+      expect(typeof eligibilityService.calculate_eligibility).toBe('function');
+      expect(typeof inventoryService.manage_inventory).toBe('function');
+      expect(typeof requestService.create_emergency_request).toBe('function');
+      expect(typeof requestService.match_blood_and_donors).toBe('function');
+      expect(typeof reservationService.reserve_blood_stock).toBe('function');
+      expect(typeof requestService.escalate_request).toBe('function');
+      expect(typeof driveService.book_donation_slot).toBe('function');
+      expect(typeof inventoryService.transfer_blood_stock).toBe('function');
+      expect(typeof reportService.generate_reports).toBe('function');
+    });
+
+    test('All 10 functions are exported on src/index business logic hub', () => {
+      expect(typeof rootHub.register_donor).toBe('function');
+      expect(typeof rootHub.calculate_eligibility).toBe('function');
+      expect(typeof rootHub.manage_inventory).toBe('function');
+      expect(typeof rootHub.create_emergency_request).toBe('function');
+      expect(typeof rootHub.match_blood_and_donors).toBe('function');
+      expect(typeof rootHub.reserve_blood_stock).toBe('function');
+      expect(typeof rootHub.escalate_request).toBe('function');
+      expect(typeof rootHub.book_donation_slot).toBe('function');
+      expect(typeof rootHub.transfer_blood_stock).toBe('function');
+      expect(typeof rootHub.generate_reports).toBe('function');
+    });
+  });
+
   // 1. register_donor()
   describe('1. register_donor()', () => {
     test('Boundary gap: Rejects empty name, email, or phone', async () => {

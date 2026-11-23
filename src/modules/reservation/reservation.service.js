@@ -6,6 +6,25 @@ const { AppError } = require('../../middleware/errorHandler');
 
 class ReservationService {
   /**
+   * 6. reserve_blood_stock()
+   * Gap Analysis:
+   * Boundary gaps: Requested quantity equals available stock or exceeds it
+   * Error path gaps: Concurrent reservation or insufficient stock
+   * Domain constraint gaps: No expired stock or double allocation
+   * Specification addition: Atomic reservation, quantity checks, and failure handling
+   */
+  async reserve_blood_stock(request_id, blood_bank_id, blood_unit_id, requested_units, staff_user) {
+    const user = staff_user || { userId: blood_bank_id, role: 'BLOOD_BANK_STAFF' };
+    return this.reserveAndFulfillBloodRequest(
+      request_id,
+      blood_bank_id,
+      blood_unit_id,
+      requested_units,
+      user
+    );
+  }
+
+  /**
    * Part-B AI-Assisted Algorithm:
    * ASYNC FUNCTION reserveAndFulfillBloodRequest(dbClient, requestId, bloodBankId, bloodUnitId, requestedQty, staffUser)
    *
@@ -176,4 +195,7 @@ class ReservationService {
   }
 }
 
-module.exports = new ReservationService();
+const reservationService = new ReservationService();
+reservationService.reserve_blood_stock = reservationService.reserve_blood_stock.bind(reservationService);
+module.exports = reservationService;
+module.exports.reserve_blood_stock = reservationService.reserve_blood_stock;

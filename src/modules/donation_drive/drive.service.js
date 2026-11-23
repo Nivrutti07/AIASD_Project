@@ -5,6 +5,19 @@ const db = require('../../config/database');
 const { AppError } = require('../../middleware/errorHandler');
 
 class DriveService {
+  /**
+   * 8. book_donation_slot()
+   * Gap Analysis:
+   * Boundary gaps: Last available slot or full capacity
+   * Error path gaps: Duplicate booking or ineligible donor
+   * Domain constraint gaps: Donor eligibility and slot capacity
+   * Specification addition: Booking limits, eligibility checks, and overbooking prevention via atomic row lock
+   */
+  async book_donation_slot(booking_data, user) {
+    const actingUser = user || { userId: booking_data.donor_id, role: 'DONOR' };
+    return this.bookDonationSlot(booking_data, actingUser);
+  }
+
   async createDrive(driveData, user) {
     if (user.role !== 'BLOOD_BANK_STAFF' && user.role !== 'ADMIN') {
       throw new AppError('Unauthorized: Only Blood Bank Staff or Admin can create donation drives', 403, 'FORBIDDEN');
@@ -220,4 +233,7 @@ class DriveService {
   }
 }
 
-module.exports = new DriveService();
+const driveService = new DriveService();
+driveService.book_donation_slot = driveService.book_donation_slot.bind(driveService);
+module.exports = driveService;
+module.exports.book_donation_slot = driveService.book_donation_slot;

@@ -5,6 +5,33 @@ const { BLOOD_GROUPS, COMPONENTS, DEFAULT_STOCK_THRESHOLDS } = require('../../co
 
 class InventoryService {
   /**
+   * 3. manage_inventory()
+   * Gap Analysis:
+   * Boundary gaps: Zero quantity or stock at configured threshold
+   * Error path gaps: Invalid blood group, component, or dates
+   * Domain constraint gaps: Collection date must precede expiry date
+   * Specification addition: Enforces quantity limits, date validation, and low-stock behavior
+   */
+  async manage_inventory(blood_bank_id, unit_data, user) {
+    if (!blood_bank_id) throw new AppError('blood_bank_id is required', 400, 'INVALID_BANK_ID');
+    const staff = user || { userId: blood_bank_id, role: 'BLOOD_BANK_STAFF' };
+    return this.trackBloodUnit(blood_bank_id, unit_data, staff);
+  }
+
+  /**
+   * 9. transfer_blood_stock()
+   * Gap Analysis:
+   * Boundary gaps: Transfer quantity equals available stock
+   * Error path gaps: Invalid destination or failed transfer
+   * Domain constraint gaps: Compatible stock, valid expiry, and sufficient quantity
+   * Specification addition: Atomic transfer validation, destination insertion, and rollback on failure
+   */
+  async transfer_blood_stock(source_bank_id, target_bank_id, blood_unit_id, transfer_units, user) {
+    const actingUser = user || { userId: source_bank_id, role: 'BLOOD_BANK_STAFF' };
+    return this.transferBloodStock(source_bank_id, target_bank_id, blood_unit_id, transfer_units, actingUser);
+  }
+
+  /**
    * FR-04: track_blood_unit(...) -> BloodUnit
    */
   async trackBloodUnit(bloodBankId, unitData, user) {
@@ -236,4 +263,9 @@ class InventoryService {
   }
 }
 
-module.exports = new InventoryService();
+const inventoryService = new InventoryService();
+inventoryService.manage_inventory = inventoryService.manage_inventory.bind(inventoryService);
+inventoryService.transfer_blood_stock = inventoryService.transfer_blood_stock.bind(inventoryService);
+module.exports = inventoryService;
+module.exports.manage_inventory = inventoryService.manage_inventory;
+module.exports.transfer_blood_stock = inventoryService.transfer_blood_stock;

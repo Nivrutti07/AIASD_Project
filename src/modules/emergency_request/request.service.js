@@ -16,6 +16,59 @@ const {
 
 class RequestService {
   /**
+   * 4. create_emergency_request()
+   * Gap Analysis:
+   * Boundary gaps: Zero units or required-by time at the current time
+   * Error path gaps: Missing fields or invalid request data
+   * Domain constraint gaps: Valid blood group, component, urgency, and location
+   * Specification addition: Validates required fields, quantity limits, and future required-by time
+   */
+  async create_emergency_request(request_data, user) {
+    const reqUser = user || { userId: request_data.hospital_id || 'USR-HOSP-01', role: 'HOSPITAL' };
+    return this.createBloodRequest(request_data, reqUser);
+  }
+
+  /**
+   * 5. match_blood_and_donors()
+   * Gap Analysis:
+   * Boundary gaps: No compatible stock or eligible donors
+   * Error path gaps: Missing inventory or donor data
+   * Domain constraint gaps: Separate RBC/plasma compatibility and donor eligibility rules
+   * Specification addition: Matching rules, ranking criteria (exact match, distance, interval, response), and privacy protection
+   */
+  async match_blood_and_donors(request_id, location = {}, requesting_user = null) {
+    if (!request_id) throw new AppError('request_id is required', 400, 'INVALID_REQUEST_ID');
+    const request = await this.getRequestById(request_id);
+    const ranked = await this.rankEligibleDonors(
+      request.blood_group,
+      request.component,
+      location,
+      requesting_user
+    );
+    return {
+      request_id: request.req_id,
+      blood_group: request.blood_group,
+      component: request.component,
+      matched_donors: ranked,
+      count: ranked.length
+    };
+  }
+
+  /**
+   * 7. escalate_request()
+   * Gap Analysis:
+   * Boundary gaps: Escalation interval reached exactly
+   * Error path gaps: No eligible donors or partial fulfillment
+   * Domain constraint gaps: Critical-request escalation rules
+   * Specification addition: Escalation timing, partial fulfillment, and status transition to 'ESCALATED'
+   */
+  async escalate_request(request_id, user) {
+    if (!request_id) throw new AppError('request_id is required', 400, 'INVALID_REQUEST_ID');
+    const actingUser = user || { userId: 'USR-STAFF-01', role: 'BLOOD_BANK_STAFF' };
+    return this.escalateRequest(request_id, actingUser);
+  }
+
+  /**
    * FR-06: create_blood_request(request_id: str, ...) -> BloodRequest
    */
   async createBloodRequest(requestData, user) {
@@ -265,4 +318,11 @@ class RequestService {
   }
 }
 
-module.exports = new RequestService();
+const requestService = new RequestService();
+requestService.create_emergency_request = requestService.create_emergency_request.bind(requestService);
+requestService.match_blood_and_donors = requestService.match_blood_and_donors.bind(requestService);
+requestService.escalate_request = requestService.escalate_request.bind(requestService);
+module.exports = requestService;
+module.exports.create_emergency_request = requestService.create_emergency_request;
+module.exports.match_blood_and_donors = requestService.match_blood_and_donors;
+module.exports.escalate_request = requestService.escalate_request;
