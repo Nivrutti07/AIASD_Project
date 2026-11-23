@@ -1,0 +1,42 @@
+{
+  "name": "blood-donation-system-backend",
+  "version": "1.0.0",
+  "description": "Blood Donation and Emergency Request System - Node.js, Express, PostgreSQL Backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "jest --runInBand --detectOpenHandles --forceExit",
+    "seed": "node src/models/runSeed.js"
+  },
+  "keywords": [
+    "blood-donation",
+    "emergency-request",
+    "nodejs",
+    "express",
+    "postgresql",
+    "modular-monolith"
+  ],
+  "author": "Kedar Nimbalkar, Nivrutti Patil, Sanskruti Agasgekar, Shreya Pavaskar",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "joi": "^17.13.3",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.3",
+    "pg-mem": "^3.0.5",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}
